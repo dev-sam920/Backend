@@ -2,7 +2,6 @@ const multer = require("multer");
 const cloudinary = require("cloudinary").v2;
 require("dotenv").config();
 
-// Configure Cloudinary using CLOUDINARY_URL if available, else individual keys
 if (process.env.CLOUDINARY_URL) {
     cloudinary.config({ CLOUDINARY_URL: process.env.CLOUDINARY_URL });
 } else if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET) {

@@ -44,10 +44,10 @@ app.post("/api/upload", upload.single("image"), async (req, res) => {
   }
 });
 
-// Get receipts for user (placeholder, needs auth)
+
 app.get("/api/receipts", async (req, res) => {
   try {
-    // For now, return all receipts; later add user auth
+
     const receipts = await Receipt.find();
     res.json(receipts);
   } catch (error) {
@@ -55,7 +55,7 @@ app.get("/api/receipts", async (req, res) => {
   }
 });
 
-// Save receipt
+
 app.post("/api/receipts", async (req, res) => {
   try {
     const { name, url, public_id, description, size, type, userId } = req.body;
@@ -96,6 +96,11 @@ app.post("/api/signin", async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-});
+// Only run listen() in local development, not on Vercel
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(PORT, () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+  });
+}
+
+module.exports = app;
