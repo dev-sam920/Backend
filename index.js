@@ -25,7 +25,10 @@ mongoose
   });
 
 
-app.use(cors());
+app.use(cors({
+  origin: ['https://your-frontend.vercel.app', 'http://localhost:3000'],
+  credentials: true
+}))
 app.use(express.json());
 
 app.get("/", (req, res) => {
