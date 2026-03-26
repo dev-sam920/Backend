@@ -47,10 +47,30 @@ app.post("/api/upload", upload.single("image"), async (req, res) => {
 
 app.get("/api/receipts", async (req, res) => {
   try {
-
-    const receipts = await Receipt.find();
+    const { email } = req.query;
+    console.log('=== LOADING RECEIPTS ===')
+    console.log('Email from query:', email);
+    
+    if (!email) {
+      console.log('ERROR: No email provided in query');
+      return res.status(400).json({ message: "Email is required" });
+    }
+    
+    const user = await User.findOne({ email });
+    console.log('User lookup result:', user ? 'Found' : 'Not found');
+    console.log('User details:', user);
+    
+    if (!user) {
+      console.log('ERROR: User not found for email:', email);
+      return res.status(404).json({ message: "User not found" });
+    }
+    
+    const receipts = await Receipt.find({ userId: user._id });
+    console.log('Found receipts:', receipts.length, 'receipts');
+    console.log('Receipts details:', receipts);
     res.json(receipts);
   } catch (error) {
+    console.error('ERROR getting receipts:', error);
     res.status(500).json({ message: "Server error" });
   }
 });
@@ -58,10 +78,57 @@ app.get("/api/receipts", async (req, res) => {
 
 app.post("/api/receipts", async (req, res) => {
   try {
-    const { name, url, public_id, description, size, type, userId } = req.body;
-    const receipt = new Receipt({ name, url, public_id, description, size, type, userId });
+    const { name, url, public_id, description, size, type, email } = req.body;
+    console.log('=== SAVING RECEIPT ===')
+    console.log('Request body:', { name, url, public_id, description, size, type, email });
+    
+    if (!email) {
+      console.log('ERROR: No email provided');
+      return res.status(400).json({ message: "Email is required" });
+    }
+    
+    const user = await User.findOne({ email });
+    console.log('User lookup result:', user ? 'Found' : 'Not found');
+    console.log('User details:', user);
+    
+    if (!user) {
+      console.log('ERROR: User not found for email:', email);
+      return res.status(404).json({ message: "User not found" });
+    }
+    
+    const receipt = new Receipt({ name, url, public_id, description, size, type, userId: user._id });
+    console.log('Creating receipt:', receipt);
     await receipt.save();
+    console.log('Receipt saved successfully:', receipt);
     res.status(201).json(receipt);
+  } catch (error) {
+    console.error('ERROR saving receipt:', error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+app.delete("/api/receipts/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const receipt = await Receipt.findByIdAndDelete(id);
+    if (!receipt) {
+      return res.status(404).json({ message: "Receipt not found" });
+    }
+    res.json({ message: "Receipt deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+app.patch("/api/receipts/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { description } = req.body;
+    const receipt = await Receipt.findByIdAndUpdate(id, { description }, { new: true });
+    if (!receipt) {
+      return res.status(404).json({ message: "Receipt not found" });
+    }
+    res.json(receipt);
   } catch (error) {
     res.status(500).json({ message: "Server error" });
   }
@@ -90,7 +157,7 @@ app.post("/api/signin", async (req, res) => {
     if (!user || !(await bcrypt.compare(password, user.password))) {
       return res.status(400).json({ message: "Invalid credentials" });
     }
-    res.json({ message: "Login successful", user: { name: user.name, email: user.email } });
+    res.json({ message: "Login successful", user: { id: user._id, name: user.name, email: user.email } });
   } catch (error) {
     res.status(500).json({ message: "Server error" });
   }
