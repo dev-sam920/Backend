@@ -163,7 +163,7 @@ app.post("/api/signin", async (req, res) => {
   }
 });
 
-// Only run listen() in local development, not on Vercel
+
 if (process.env.NODE_ENV !== 'production') {
   app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
