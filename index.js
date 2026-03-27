@@ -25,10 +25,30 @@ mongoose
   });
 
 
+const allowedOrigins = [
+  'https://receiptkeep.vercel.app',
+  'https://receipts-backend-wheat.vercel.app',
+  'http://localhost:3000',
+  'http://localhost:5173'
+]
+
 app.use(cors({
-  origin: ['https://receiptkeep.vercel.app', 'http://localhost:3000', 'http://localhost:5173'],
-  credentials: true
+  origin: true,
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }))
+
+app.use((req, res, next) => {
+  if (req.method === 'OPTIONS') {
+    res.header('Access-Control-Allow-Origin', req.headers.origin || '*')
+    res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS')
+    res.header('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With')
+    return res.sendStatus(204)
+  }
+  next()
+})
+
 app.use(express.json());
 
 app.get("/", (req, res) => {
