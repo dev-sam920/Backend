@@ -27,7 +27,6 @@ mongoose
 
 const allowedOrigins = [
   'https://receiptkeep.vercel.app',
-  'https://receipts-backend-wheat.vercel.app',
   'http://localhost:3000',
   'http://localhost:5173'
 ]
