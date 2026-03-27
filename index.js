@@ -33,7 +33,7 @@ mongoose
 
 const allowedOrigins = [
   'https://receiptkeep.vercel.app',
-  'http://localhost:3000',
+  'http://localhost:5000',
   'http://localhost:5173'
 ]
 
@@ -188,7 +188,7 @@ app.post("/api/signup", async (req, res) => {
     await user.save();
     console.log('User saved successfully');
     
-    res.status(201).json({ message: "User created successfully" });
+    res.status(201).json({ message: "User created successfully", user: { id: user._id, name: user.name, email: user.email } });
   } catch (error) {
     console.error('CRITICAL ERROR in signup endpoint:', error.message || error);
     if (error.stack) console.error('Stack trace:', error.stack);
