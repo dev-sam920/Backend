@@ -13,6 +13,11 @@ const PORT = process.env.PORT || 5000;
 
 const mongoURI = process.env.MONGODB_URI;
 
+if (!mongoURI) {
+  console.error('✗ MONGODB_URI environment variable not set');
+  process.exit(1);
+}
+
 mongoose
   .connect(mongoURI, {
 
@@ -22,6 +27,7 @@ mongoose
   })
   .catch((err) => {
     console.error("✗ MongoDB connection failed:", err.message);
+    process.exit(1);
   });
 
 
@@ -158,38 +164,100 @@ app.patch("/api/receipts/:id", async (req, res) => {
 
 app.post("/api/signup", async (req, res) => {
   try {
+    console.log('=== SIGNUP ATTEMPT ===');
     const { name, email, password } = req.body;
+    console.log('Signup data received - name:', !!name, 'email:', !!email, 'password:', !!password);
+    
+    if (!name || !email || !password) {
+      console.log('ERROR: Missing required fields');
+      return res.status(400).json({ message: "All fields are required" });
+    }
+    
     const existingUser = await User.findOne({ email });
     if (existingUser) {
+      console.log('ERROR: User already exists:', email);
       return res.status(400).json({ message: "User already exists" });
     }
+    
+    console.log('Hashing password...');
     const hashedPassword = await bcrypt.hash(password, 10);
+    console.log('Password hashed successfully');
+    
     const user = new User({ name, email, password: hashedPassword });
+    console.log('Saving new user:', email);
     await user.save();
+    console.log('User saved successfully');
+    
     res.status(201).json({ message: "User created successfully" });
   } catch (error) {
-    res.status(500).json({ message: "Server error" });
+    console.error('CRITICAL ERROR in signup endpoint:', error.message || error);
+    if (error.stack) console.error('Stack trace:', error.stack);
+    res.status(500).json({ message: "Server error", details: error.message });
   }
 });
 
 app.post("/api/signin", async (req, res) => {
   try {
+    console.log('=== SIGNIN ATTEMPT ===');
+    console.log('Request body received');
+    
     const { email, password } = req.body;
-    const user = await User.findOne({ email });
-    if (!user || !(await bcrypt.compare(password, user.password))) {
+    console.log('Email provided:', !!email);
+    console.log('Password provided:', !!password);
+    
+    if (!email || !password) {
+      console.log('ERROR: Missing email or password');
+      return res.status(400).json({ message: "Email and password are required" });
+    }
+    
+    console.log('Querying User collection...');
+    let user;
+    try {
+      user = await User.findOne({ email });
+      console.log('User lookup successful:', user ? 'Found' : 'Not found');
+    } catch (dbError) {
+      console.error('Database error during User lookup:', dbError.message);
+      throw dbError;
+    }
+    
+    if (!user) {
+      console.log('ERROR: User not found for email:', email);
       return res.status(400).json({ message: "Invalid credentials" });
     }
+    
+    if (!user.password) {
+      console.error('ERROR: User found but no password hash stored');
+      return res.status(500).json({ message: "User account error" });
+    }
+    
+    console.log('Comparing passwords...');
+    let isPasswordValid = false;
+    try {
+      isPasswordValid = await bcrypt.compare(password, user.password);
+      console.log('Password comparison successful:', isPasswordValid);
+    } catch (bcryptError) {
+      console.error('Bcrypt comparison error:', bcryptError.message);
+      throw bcryptError;
+    }
+    
+    if (!isPasswordValid) {
+      console.log('ERROR: Invalid password for user:', email);
+      return res.status(400).json({ message: "Invalid credentials" });
+    }
+    
+    console.log('SUCCESS: User authenticated:', email);
     res.json({ message: "Login successful", user: { id: user._id, name: user.name, email: user.email } });
   } catch (error) {
-    res.status(500).json({ message: "Server error" });
+    console.error('CRITICAL ERROR in signin endpoint:', error.message || error);
+    if (error.stack) console.error('Stack trace:', error.stack);
+    res.status(500).json({ message: "Server error", details: error.message });
   }
 });
 
 
-if (process.env.NODE_ENV !== 'production') {
-  app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-  });
-}
+// Start server in all environments
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
 
 module.exports = app;
